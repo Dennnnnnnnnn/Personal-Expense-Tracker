@@ -20,10 +20,11 @@ while running:
 
     1. Add expense
     2. Remove expense
-    3. Show expenses
-    4. Show total
-    5. Show categories
-    6. Exit
+    3. Update expense
+    4. Show expenses
+    5. Show total
+    6. Show categories
+    7. Exit
     ''')
 
     decision = int(input("Choose: "))
@@ -45,21 +46,41 @@ while running:
         expense_to_remove = int(input("Enter the number of expense to remove"))
         if expense_to_remove < len(expenses) and expense_to_remove >= 0:
             expenses = remove_expense_from_list(expenses, expense_to_remove)
+            save_expenses_to_file(expenses, data_file)
+            print(f"Expense {expense_to_remove} was removed successfully")
         else: print("Expense not found")
-        save_expenses_to_file(expenses, data_file)
-        print(f"Expense {expense_to_remove} was removed successfully")
+
+    elif (decision == 3): 
+        expense_to_update = int(input("Enter the number of expense you want to update: "))
+
+        if expense_to_update >= len(expenses) or expense_to_update < 0: 
+            print("No such expense was found!")
+            continue
+
+        print('''What do you want to change?
+                1. Name
+                2. Price
+                3. Category
+                4. Date''')
         
-    elif (decision == 3):
+        part_to_change = int(input(""))
+        new_information = input("Enter new information: ")
+        expenses[expense_to_update].update_expense(part_to_change, new_information) 
+        save_expenses_to_file(expenses, data_file)
+        
+        print("Changed sucessfully!")
+
+    elif (decision == 4):
         print("Expenses: ")
         print_expenses(expenses)
         
-    elif (decision == 4):
+    elif (decision == 5):
         print("Total expenses: ", calculate_total_price(expenses))
 
-    elif (decision == 5):
+    elif (decision == 6):
         print("Expenses by categories: ", calculate_total_category(expenses))
 
-    elif (decision == 6):
+    elif (decision == 7):
         running = False
 
     else: print("Incorrect value")

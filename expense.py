@@ -59,5 +59,15 @@ class Expense:
 
         return cls(name, price, category, date)
 
-e1 = Expense('1',1,'1','1')
-e1.to_dict()
+    def update_expense(self, part_to_change, new_information):
+
+        match part_to_change:
+            case 1:
+                self.name = new_information
+            case 2:
+                self.price = int(new_information)
+            case 3:
+                self.category = new_information
+            case 4:
+                self.date = new_information
+        
