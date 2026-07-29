@@ -1,6 +1,6 @@
 from expense import Expense
 
-def calculate_total(expenses: list[Expense]) -> float:
+def calculate_total_price(expenses: list[Expense]) -> float:
     total_price = 0
 
     for item in expenses:
