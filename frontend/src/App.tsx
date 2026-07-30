@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 type Category = 'Food' | 'Transport' | 'Shopping' | 'Health' | 'Entertainment' | 'Other'
 
@@ -201,29 +201,66 @@ function PeriodSelector({ period, onChange }: PeriodSelectorProps) {
 
 // ── Add Expense Modal ─────────────────────────────────────────────────────────
 
-interface AddExpenseModalProps {
+type ExpenseModalProps = {
+  expense?: Expense | null
   onClose: () => void
-  onAdd: (expense: Omit<Expense, 'id'>) => void
+  onSave: (data: Expense | Omit<Expense,"id">) => void
 }
 
-function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
+function ExpenseModal({ expense, onClose, onSave }: ExpenseModalProps) {
   const [form, setForm] = useState({
-    name: '',
-    price: '',
-    category: 'Food' as Category,
+    name: "",
+    price: "",
+    category: "Food" as Category,
     date: new Date().toISOString().slice(0, 10),
   })
-  const [error, setError] = useState('')
-  const [nameFocused,  setNameFocused]  = useState(false)
+
+  const [error, setError] = useState("")
+
+  const [nameFocused, setNameFocused] = useState(false)
   const [priceFocused, setPriceFocused] = useState(false)
-  const [dateFocused,  setDateFocused]  = useState(false)
+  const [dateFocused, setDateFocused] = useState(false)
+
+  useEffect(() => {
+    if (expense) {
+      setForm({
+        name: expense.name,
+        price: String(expense.price),
+        category: expense.category,
+        date: expense.date,
+      })
+    } else {
+      setForm({
+        name: "",
+        price: "",
+        category: "Food",
+        date: new Date().toISOString().slice(0, 10),
+      })
+    }
+  }, [expense])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) { setError('Please enter an expense name.'); return }
     const price = parseFloat(form.price)
     if (isNaN(price) || price <= 0) { setError('Please enter a valid amount.'); return }
-    onAdd({ name: form.name.trim(), price, category: form.category, date: form.date })
+    if (expense) {
+      onSave({
+        id: expense.id,
+        name: form.name.trim(),
+        price,
+        category: form.category,
+        date: form.date,
+      })
+    } else {
+      onSave({
+        name: form.name.trim(),
+        price,
+        category: form.category,
+        date: form.date,
+      })
+    }
+
     onClose()
   }
 
@@ -235,7 +272,7 @@ function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8" style={{ border: '1px solid #E8E4DC' }}>
         <div className="flex items-center justify-between mb-6">
-          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.5rem' }}>New Expense</h2>
+          <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.5rem' }}>{expense ? "Edit Expense" : "New Expense"}</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
@@ -319,7 +356,7 @@ function AddExpenseModal({ onClose, onAdd }: AddExpenseModalProps) {
             className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 mt-1"
             style={{ backgroundColor: '#5B47E0' }}
           >
-            Add Expense
+            {expense ? "Save Changes" : "Add Expense"}
           </button>
         </form>
       </div>
@@ -343,11 +380,22 @@ export default function App() {
     customFrom: '',
     customTo: '',
   })
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null) //for editing 
 
   const handleAdd = (data: Omit<Expense, 'id'>) => {
     setExpenses(prev => [{ id: nextId, ...data }, ...prev])
     setNextId(n => n + 1)
   }
+
+  const handleChange = (updatedExpense: Expense) => {
+  setExpenses(prev =>
+    prev.map(expense =>
+      expense.id === updatedExpense.id
+        ? updatedExpense
+        : expense
+    )
+  )
+}
 
   const handleDelete = (id: number) => {
     setExpenses(prev => prev.filter(e => e.id !== id))
@@ -508,6 +556,15 @@ export default function App() {
                     style={{ fontSize: '0.75rem' }}
                     title="Delete expense"
                   >✕</button>
+                  <button
+                    onClick={() => {
+                      setSelectedExpense(expense)
+                      setShowModal(true)
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-black transition-opacity hover:opacity-90"
+                    style={{ fontSize: '0.75rem' }}
+                    title="Change expense"
+                  >✏️</button>
                 </div>
               </div>
             )
@@ -515,7 +572,22 @@ export default function App() {
         </div>
       </main>
 
-      {showModal && <AddExpenseModal onClose={() => setShowModal(false)} onAdd={handleAdd} />}
+      {showModal && (
+        <ExpenseModal
+          expense={selectedExpense}
+          onClose={() => {
+            setShowModal(false)
+            setSelectedExpense(null)
+          }}
+          onSave={(data) => {
+            if ("id" in data) {
+              handleChange(data)
+            } else {
+              handleAdd(data)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }
