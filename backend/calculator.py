@@ -1,4 +1,4 @@
-from expense import Expense
+from backend.expense import Expense
 
 def calculate_total_price(expenses: list[Expense]) -> float:
     total_price = 0

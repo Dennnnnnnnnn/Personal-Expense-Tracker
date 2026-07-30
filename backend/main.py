@@ -1,6 +1,6 @@
-from expense import Expense
-from calculator import calculate_total_price, calculate_total_category
-from storage import read_expenses, save_expenses_to_file, remove_expense_from_list
+from backend.expense import Expense
+from backend.calculator import calculate_total_price, calculate_total_category
+from backend.storage import read_expenses, save_expenses_to_file, remove_expense_from_list
 
 running = True
 data_file = "data.json"
@@ -51,6 +51,7 @@ while running:
         else: print("Expense not found")
 
     elif (decision == 3): 
+        print_expenses(expenses)
         expense_to_update = int(input("Enter the number of expense you want to update: "))
 
         if expense_to_update >= len(expenses) or expense_to_update < 0: 

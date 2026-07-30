@@ -1,4 +1,4 @@
-from expense import Expense
+from backend.expense import Expense
 import json
 
 def convert_expenses_to_list(expenses: list[Expense]) -> list[dict]:
