@@ -1,6 +1,6 @@
-from backend.expense import Expense
-from backend.calculator import calculate_total_price, calculate_total_category
-from backend.storage import read_expenses, save_expenses_to_file, remove_expense_from_list
+from .expense import Expense
+from .calculator import calculate_total_price, calculate_total_category
+from .storage import read_expenses, save_expenses_to_file, remove_expense_from_list
 
 running = True
 data_file = "data.json"

@@ -23,27 +23,6 @@ const CATEGORY_STYLES: Record<Category, { bg: string; text: string; dot: string 
   Other:         { bg: '#F3F4F6', text: '#374151', dot: '#9CA3AF' },
 }
 
-const INITIAL_EXPENSES: Expense[] = [
-  { id: 1,  name: 'Grocery run',            price: 68.40,  category: 'Food',          date: '2026-07-28' },
-  { id: 2,  name: 'Monthly transit pass',   price: 90.00,  category: 'Transport',     date: '2026-07-27' },
-  { id: 3,  name: 'Linen trousers',         price: 129.00, category: 'Shopping',      date: '2026-07-25' },
-  { id: 4,  name: 'Dentist checkup',        price: 55.00,  category: 'Health',        date: '2026-07-24' },
-  { id: 5,  name: 'Cinema tickets ×2',      price: 34.00,  category: 'Entertainment', date: '2026-07-22' },
-  { id: 6,  name: 'Farmers market',         price: 42.75,  category: 'Food',          date: '2026-07-21' },
-  { id: 7,  name: 'Uber to airport',        price: 31.50,  category: 'Transport',     date: '2026-07-19' },
-  { id: 8,  name: 'Vitamins & supplements', price: 28.00,  category: 'Health',        date: '2026-07-17' },
-  { id: 9,  name: 'New headphones',         price: 199.00, category: 'Shopping',      date: '2026-07-14' },
-  { id: 10, name: 'Restaurant dinner',      price: 87.60,  category: 'Food',          date: '2026-07-12' },
-  { id: 11, name: 'Coffee subscription',    price: 18.00,  category: 'Food',          date: '2026-06-28' },
-  { id: 12, name: 'Train tickets',          price: 54.00,  category: 'Transport',     date: '2026-06-20' },
-  { id: 13, name: 'Running shoes',          price: 145.00, category: 'Shopping',      date: '2026-06-15' },
-  { id: 14, name: 'Pharmacy',               price: 22.50,  category: 'Health',        date: '2026-06-10' },
-  { id: 15, name: 'Concert tickets',        price: 78.00,  category: 'Entertainment', date: '2026-06-05' },
-  { id: 16, name: 'Supermarket',            price: 91.30,  category: 'Food',          date: '2026-05-29' },
-  { id: 17, name: 'Bus pass',               price: 45.00,  category: 'Transport',     date: '2026-05-20' },
-  { id: 18, name: 'Bookstore',              price: 37.00,  category: 'Entertainment', date: '2026-05-14' },
-]
-
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
 function formatDate(dateStr: string) {
@@ -369,10 +348,23 @@ function ExpenseModal({ expense, onClose, onSave }: ExpenseModalProps) {
 const now = new Date()
 
 export default function App() {
-  const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES)
+  const [expenses, setExpenses] = useState<Expense[]>([])
   const [showModal, setShowModal] = useState(false)
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/expenses")
+      .then(res => {
+        console.log("Response:", res)
+        return res.json()})
+      .then(data => {
+        console.log("Data from bd:", data)
+        setExpenses(data)
+      })
+      .catch(err => console.error("fetch err: ",err))
+  }, [])
+  
   const [filterCategory, setFilterCategory] = useState<Category | 'All'>('All')
-  const [nextId, setNextId] = useState(INITIAL_EXPENSES.length + 1)
+  const [nextId, setNextId] = useState(1)
   const [period, setPeriod] = useState<PeriodState>({
     mode: 'month',
     year: now.getFullYear(),
@@ -382,9 +374,10 @@ export default function App() {
   })
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null) //for editing 
 
-  const handleAdd = (data: Omit<Expense, 'id'>) => {
-    setExpenses(prev => [{ id: nextId, ...data }, ...prev])
-    setNextId(n => n + 1)
+  const handleAdd = async (data: Omit<Expense, 'id'>) => {
+    const response = await fetch("http://127.0.0.1:8000/expenses", {method: "POST", headers: {"Content-Type": "application/json", }, body: JSON.stringify(data),})
+    const newExpense = await response.json()
+    setExpenses(prev => [newExpense, ...prev])
   }
 
   const handleChange = (updatedExpense: Expense) => {
@@ -416,6 +409,9 @@ export default function App() {
   }, [expenses, period])
 
   // Further filtered by category
+  console.log("All expenses:", expenses)
+  console.log("Period:", period)
+  console.log("Period expenses:", periodExpenses)
   const filtered = useMemo(() =>
     filterCategory === 'All' ? periodExpenses : periodExpenses.filter(e => e.category === filterCategory),
     [periodExpenses, filterCategory]
@@ -520,13 +516,15 @@ export default function App() {
 
         {/* Expense List */}
         <div className="flex flex-col gap-2">
+          {console.log("Filtered expenses:", filtered)}
+
           {filtered.length === 0 && (
             <div className="bg-white rounded-2xl py-14 text-center" style={{ border: '1px solid #E8E4DC' }}>
               <p style={{ fontSize: '2rem' }}>🪴</p>
               <p style={{ color: '#9CA3AF', marginTop: '8px', fontSize: '0.875rem' }}>No expenses for this period.</p>
             </div>
           )}
-
+          
           {filtered.map((expense, idx) => {
             const prevDate = idx > 0 ? filtered[idx - 1].date : null
             const showDateLabel = expense.date !== prevDate

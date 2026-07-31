@@ -1,4 +1,4 @@
-from backend.expense import Expense
+from .expense import Expense
 import json
 
 def convert_expenses_to_list(expenses: list[Expense]) -> list[dict]:
@@ -13,9 +13,7 @@ def save_expenses_to_file(expenses: list[Expense], filename):
     with open(filename, "w") as file:
         json.dump(convert_expenses_to_list(expenses), file, indent=2)
 
-# def save_json_to_file(expenses: list[dict], filename):
-#     with open(filename, "w") as file:
-#         json.dump(expenses, file, indent=2)
+
 def remove_expense_from_list(expenses: list[Expense], num_to_remove: int) -> list[Expense]:
     expenses.pop(num_to_remove)
     
@@ -26,6 +24,7 @@ def read_expenses(filename: str) -> list[Expense]:
         with open (filename, "r") as jsonfile:
             try:
                 data = json.load(jsonfile)
+                print(f"JSON file loaded: {data}")
             except json.decoder.JSONDecodeError:
                 return []
     except FileNotFoundError:
