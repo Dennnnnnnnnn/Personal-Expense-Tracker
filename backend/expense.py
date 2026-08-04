@@ -1,12 +1,22 @@
 class Expense:
-    def __init__(self, name, price, category, date):
+    def __init__(self, id, name, price, category, date):
+        self.id = id
         self.name = name
         self.price = price
         self.category = category
         self.date = date
 
     def __str__(self):
-        return f"Name: {self.name}, Price: {self.price}, Date: {self.date} ({self.category})"
+        return f"Name: {self.name}(id: {self.id}), Price: {self.price}, Date: {self.date} ({self.category})"
+
+    @property
+    def id(self):
+        return self._id
+    @id.setter
+    def id(self, new_id):
+        if not new_id:
+            raise ValueError("Id can't be empty")
+        else: self._id = new_id
 
     @property
     def name(self):
@@ -42,6 +52,7 @@ class Expense:
 
     def to_dict(self):
         expense_data = {
+            "id": self.id,
             "name": self.name,
             "price": self.price,
             "category": self.category,
@@ -52,12 +63,13 @@ class Expense:
 
     @classmethod
     def from_dict(cls, json_data: dict):
+        id = json_data["id"]
         name = json_data["name"]
         price = json_data["price"]
         category = json_data["category"]
         date = json_data["date"]
 
-        return cls(name, price, category, date)
+        return cls(id, name, price, category, date)
 
     def update_expense(self, part_to_change, new_information):
 

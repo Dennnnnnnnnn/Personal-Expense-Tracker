@@ -19,6 +19,9 @@ def remove_expense_from_list(expenses: list[Expense], num_to_remove: int) -> lis
     
     return expenses
 
+def get_next_id(expenses: list[Expense]) -> int:
+    return max([expense.id for expense in expenses]) + 1
+
 def read_expenses(filename: str) -> list[Expense]:
     try:
         with open (filename, "r") as jsonfile:
@@ -31,7 +34,7 @@ def read_expenses(filename: str) -> list[Expense]:
         return []
     
     data_list = list()
-    for item in data:
+    for item in data: #each dictionary from json we convert to expense object 
         expense = Expense.from_dict(item)
         data_list.append(expense)
         

@@ -1,20 +1,9 @@
 [
   {
-    "name": "Coffee",
-    "price": 5,
+    "id": 2,
+    "name": "qqq1",
+    "price": 11.0,
     "category": "Food",
-    "date": "2026-07-31"
-  },
-  {
-    "name": "Bus ticket",
-    "price": 3,
-    "category": "Transport",
-    "date": "2026-07-30"
-  },
-  {
-    "name": "Test",
-    "price": 111.0,
-    "category": "Transport",
-    "date": "2026-07-31"
+    "date": "2026-08-04"
   }
 ]

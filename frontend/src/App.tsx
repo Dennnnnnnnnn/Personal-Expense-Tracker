@@ -354,10 +354,10 @@ export default function App() {
   useEffect(() => {
     fetch("http://127.0.0.1:8000/expenses")
       .then(res => {
-        console.log("Response:", res)
+        // console.log("Response:", res)
         return res.json()})
       .then(data => {
-        console.log("Data from bd:", data)
+        // console.log("Data from bd:", data)
         setExpenses(data)
       })
       .catch(err => console.error("fetch err: ",err))
@@ -375,12 +375,17 @@ export default function App() {
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null) //for editing 
 
   const handleAdd = async (data: Omit<Expense, 'id'>) => {
+    // console.log("Handle add: ", data)
     const response = await fetch("http://127.0.0.1:8000/expenses", {method: "POST", headers: {"Content-Type": "application/json", }, body: JSON.stringify(data),})
     const newExpense = await response.json()
     setExpenses(prev => [newExpense, ...prev])
   }
 
-  const handleChange = (updatedExpense: Expense) => {
+  const handleChange = async (updatedExpense: Expense) => {
+    await fetch(`http://127.0.0.1:8000/expenses/${updatedExpense.id}`, {
+      method: "PUT", 
+      headers: {"Content-Type": "application/json", }, 
+      body: JSON.stringify(updatedExpense),})
   setExpenses(prev =>
     prev.map(expense =>
       expense.id === updatedExpense.id
@@ -390,7 +395,9 @@ export default function App() {
   )
 }
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
+    await fetch(`http://127.0.0.1:8000/expenses/${id}`, {
+      method: "DELETE", })
     setExpenses(prev => prev.filter(e => e.id !== id))
   }
 
@@ -409,9 +416,9 @@ export default function App() {
   }, [expenses, period])
 
   // Further filtered by category
-  console.log("All expenses:", expenses)
-  console.log("Period:", period)
-  console.log("Period expenses:", periodExpenses)
+  // console.log("All expenses:", expenses)
+  // console.log("Period:", period)
+  // console.log("Period expenses:", periodExpenses)
   const filtered = useMemo(() =>
     filterCategory === 'All' ? periodExpenses : periodExpenses.filter(e => e.category === filterCategory),
     [periodExpenses, filterCategory]
@@ -516,7 +523,7 @@ export default function App() {
 
         {/* Expense List */}
         <div className="flex flex-col gap-2">
-          {console.log("Filtered expenses:", filtered)}
+          {/* {console.log("Filtered expenses:", filtered)} */}
 
           {filtered.length === 0 && (
             <div className="bg-white rounded-2xl py-14 text-center" style={{ border: '1px solid #E8E4DC' }}>
