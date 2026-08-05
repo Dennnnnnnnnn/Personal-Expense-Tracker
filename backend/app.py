@@ -1,20 +1,24 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from .storage import read_expenses, save_expenses_to_file, get_next_id
+from .storage import save_expense_to_database, read_expenses_from_database, update_expense_in_database #related to db imports
 from .expense import Expense
+from .database import initialize_database, get_connection
 from pydantic import BaseModel
 import os
 
 app = FastAPI()
+initialize_database()
 DATA_FILE = "backend/data.json"
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allow_methods=["*"], allow_headers=["*"],)
 
 #get expenses
 @app.get("/expenses")
 def get_expenses():
-    expenses = read_expenses(DATA_FILE)
-    print("Loaded expenses:", expenses)
-    print("Number of expenses:", len(expenses))
+    #expenses = read_expenses(DATA_FILE) #related to .json file
+    conn = get_connection()
+    expenses = read_expenses_from_database(conn)
+    conn.close()
     return [expense.to_dict() for expense in expenses]
 
 class ExpenseCreate(BaseModel): #expense validator - used to check if the data types that come from frontend meet my class dt in models/expense.py. (to avoid price="abc")
@@ -25,7 +29,9 @@ class ExpenseCreate(BaseModel): #expense validator - used to check if the data t
 
 @app.post("/expenses")
 def add_expense(expense: ExpenseCreate):
-    expenses = read_expenses(DATA_FILE)
+    conn = get_connection()
+    expenses = read_expenses_from_database(conn)
+    
     new_expense = Expense(
         get_next_id(expenses),
         expense.name, 
@@ -33,37 +39,37 @@ def add_expense(expense: ExpenseCreate):
         expense.category, 
         expense.date,
         )
-    expenses.append(new_expense)
-    save_expenses_to_file(expenses, DATA_FILE)
- 
+
+    save_expense_to_database(new_expense, conn)
+    conn.close()
+
     return new_expense.to_dict() #** - unpacking of the dictionary
 
 @app.put("/expenses/{id}")
 def update_expense(id: int, updated_expense: ExpenseCreate):
-    expenses = read_expenses(DATA_FILE)
+    conn = get_connection()
+    expenses = read_expenses_from_database(conn)
 
-    for current_expense in expenses:
-        if current_expense.id == id: #if we found object, update it
-            current_expense.name = updated_expense.name
-            current_expense.category = updated_expense.category
-            current_expense.date = updated_expense.date
-            current_expense.price = updated_expense.price
+    updated = update_expense_in_database(id, updated_expense, conn)
+    conn.close()
+    if updated == 0:
+        raise HTTPException(status_code=404, detail="Expense wasn't found!")
 
-            save_expenses_to_file(expenses, DATA_FILE)
-            return current_expense.to_dict()
-        
-    raise HTTPException(status_code=404, detail="Expense wasn't found!")
+    return {"message": "Expense was updated successfully"}
 
 @app.delete("/expenses/{id}")
 def delete_expense(id: int):
-    expenses = read_expenses(DATA_FILE)
+    conn = get_connection()
+    expenses = read_expenses_from_database(conn)
 
     for current_expense in expenses:
         if current_expense.id == id:
             deleted_expense = current_expense
             expenses.remove(current_expense)
-            save_expenses_to_file(expenses, DATA_FILE)
+            save_expenses_to_database(expenses, conn)
+            conn.close()
             return deleted_expense
 
+    conn.close()
     raise HTTPException(status_code=404, detail="Expense wasn't found!")
     
