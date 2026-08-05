@@ -35,10 +35,16 @@ def remove_expense_from_list(expenses: list[Expense], num_to_remove: int) -> lis
     
     return expenses
 
-def remove_expense_from_database():
+def remove_expense_from_database(id: int, connection):
+    cursor = connection.cursor()
+
+    cursor.execute("DELETE FROM expenses WHERE id=?", (id,))
+
+    connection.commit()
+    return cursor.rowcount
 
 def get_next_id(expenses: list[Expense]) -> int:
-    return max([expense.id for expense in expenses]) + 1
+    return 1 if not expenses else max([expense.id for expense in expenses]) + 1
 
 def read_expenses(filename: str) -> list[Expense]:
     try:

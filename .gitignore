@@ -18,3 +18,11 @@ logs/*.txt
 !important.log
 __pycache__/
 *.pyc
+
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
