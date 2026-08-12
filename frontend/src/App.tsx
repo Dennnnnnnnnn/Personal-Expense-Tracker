@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 
-type Category = 'Food' | 'Transport' | 'Shopping' | 'Health' | 'Entertainment' | 'Other'
+type Category = 'Food' | 'Transport' | 'Shopping' | 'Health' | 'Entertainment' | 'Other' | (string & {})
 
 interface Expense {
   id: number
@@ -8,6 +8,7 @@ interface Expense {
   price: number
   category: Category
   date: string
+  comment?: string
 }
 
 type PeriodMode = 'month' | 'custom'
@@ -22,6 +23,8 @@ const CATEGORY_STYLES: Record<Category, { bg: string; text: string; dot: string 
   Entertainment: { bg: '#EDE9FE', text: '#4C1D95', dot: '#8B5CF6' },
   Other:         { bg: '#F3F4F6', text: '#374151', dot: '#9CA3AF' },
 }
+
+const DEFAULT_CATEGORY_STYLE = { bg: '#E0E7FF', text: '#3730A3', dot: '#6366F1' }
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
@@ -41,8 +44,8 @@ function inputStyle(focused: boolean) {
   }
 }
 
-function CategoryBadge({ category }: { category: Category }) {
-  const s = CATEGORY_STYLES[category]
+function CategoryBadge({ category }: { category: string }) {
+  const s = CATEGORY_STYLES[category as keyof typeof CATEGORY_STYLES] || DEFAULT_CATEGORY_STYLE
   return (
     <span
       style={{ backgroundColor: s.bg, color: s.text }}
@@ -178,27 +181,35 @@ function PeriodSelector({ period, onChange }: PeriodSelectorProps) {
   )
 }
 
-// ── Add Expense Modal ─────────────────────────────────────────────────────────
 
+
+
+// ── Add Expense Modal ─────────────────────────────────────────────────────────
 type ExpenseModalProps = {
   expense?: Expense | null
+  categories: string[] // Pass dynamically tracked categories
   onClose: () => void
-  onSave: (data: Expense | Omit<Expense,"id">) => void
+  onSave: (data: Expense | Omit<Expense, "id">) => void
+  onAddCategory: (newCategory: string) => void // Callback to save custom category
 }
 
-function ExpenseModal({ expense, onClose, onSave }: ExpenseModalProps) {
+function ExpenseModal({ expense, categories, onClose, onSave, onAddCategory }: ExpenseModalProps) {
   const [form, setForm] = useState({
     name: "",
     price: "",
-    category: "Food" as Category,
+    category: "Food",
     date: new Date().toISOString().slice(0, 10),
+    comment: "", // New state field
   })
 
-  const [error, setError] = useState("")
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState("")
 
+  const [error, setError] = useState("")
   const [nameFocused, setNameFocused] = useState(false)
   const [priceFocused, setPriceFocused] = useState(false)
   const [dateFocused, setDateFocused] = useState(false)
+  const [commentFocused, setCommentFocused] = useState(false)
 
   useEffect(() => {
     if (expense) {
@@ -207,6 +218,7 @@ function ExpenseModal({ expense, onClose, onSave }: ExpenseModalProps) {
         price: String(expense.price),
         category: expense.category,
         date: expense.date,
+        comment: expense.comment || "",
       })
     } else {
       setForm({
@@ -214,30 +226,38 @@ function ExpenseModal({ expense, onClose, onSave }: ExpenseModalProps) {
         price: "",
         category: "Food",
         date: new Date().toISOString().slice(0, 10),
+        comment: "",
       })
     }
   }, [expense])
+
+  const handleCreateCategory = () => {
+    const trimmed = newCategoryName.trim()
+    if (!trimmed) return
+    onAddCategory(trimmed)
+    setForm(f => ({ ...f, category: trimmed }))
+    setNewCategoryName("")
+    setIsCreatingCategory(false)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) { setError('Please enter an expense name.'); return }
     const price = parseFloat(form.price)
     if (isNaN(price) || price <= 0) { setError('Please enter a valid amount.'); return }
+
+    const payload = {
+      name: form.name.trim(),
+      price,
+      category: form.category,
+      date: form.date,
+      comment: form.comment.trim() || undefined,
+    }
+
     if (expense) {
-      onSave({
-        id: expense.id,
-        name: form.name.trim(),
-        price,
-        category: form.category,
-        date: form.date,
-      })
+      onSave({ id: expense.id, ...payload })
     } else {
-      onSave({
-        name: form.name.trim(),
-        price,
-        category: form.category,
-        date: form.date,
-      })
+      onSave(payload)
     }
 
     onClose()
@@ -252,10 +272,7 @@ function ExpenseModal({ expense, onClose, onSave }: ExpenseModalProps) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8" style={{ border: '1px solid #E8E4DC' }}>
         <div className="flex items-center justify-between mb-6">
           <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.5rem' }}>{expense ? "Edit Expense" : "New Expense"}</h2>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
-          >✕</button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-400">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -303,11 +320,12 @@ function ExpenseModal({ expense, onClose, onSave }: ExpenseModalProps) {
             </div>
           </div>
 
+          {/* Dynamic Categories Selection & Custom Input */}
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider">Category</label>
             <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map(cat => {
-                const s = CATEGORY_STYLES[cat]
+              {categories.map(cat => {
+                const s = CATEGORY_STYLES[cat as keyof typeof CATEGORY_STYLES] || DEFAULT_CATEGORY_STYLE
                 const active = form.category === cat
                 return (
                   <button
@@ -325,7 +343,56 @@ function ExpenseModal({ expense, onClose, onSave }: ExpenseModalProps) {
                   </button>
                 )
               })}
+
+              {!isCreatingCategory ? (
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingCategory(true)}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-gray-400 text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  + New Category
+                </button>
+              ) : (
+                <div className="flex items-center gap-1.5 w-full mt-1">
+                  <input
+                    type="text"
+                    placeholder="Category name"
+                    value={newCategoryName}
+                    onChange={e => setNewCategoryName(e.target.value)}
+                    className="px-3 py-1 text-xs rounded-lg border outline-none flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateCategory}
+                    className="px-3 py-1 text-xs bg-indigo-600 text-white rounded-lg"
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingCategory(false)}
+                    className="px-2 py-1 text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* Comment Field */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider">Comment (Optional)</label>
+            <textarea
+              rows={2}
+              placeholder="e.g. Bought at Walmart discount sale"
+              value={form.comment}
+              onChange={e => setForm(f => ({ ...f, comment: e.target.value }))}
+              onFocus={() => setCommentFocused(true)}
+              onBlur={() => setCommentFocused(false)}
+              className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none transition-all resize-none"
+              style={inputStyle(commentFocused)}
+            />
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
@@ -349,18 +416,26 @@ const now = new Date()
 
 export default function App() {
   const [expenses, setExpenses] = useState<Expense[]>([])
+  const [categories, setCategories] = useState<string[]>(CATEGORIES) // Dynamic category list
   const [showModal, setShowModal] = useState(false)
 
+  // Function to add a unique custom category
+  const handleAddCategory = (newCat: string) => {
+    if (!categories.includes(newCat)) {
+      setCategories(prev => [...prev, newCat])
+    }
+  }
+
+  // Automatically add any custom category returned from the backend into state
   useEffect(() => {
     fetch("http://127.0.0.1:8000/expenses")
-      .then(res => {
-        // console.log("Response:", res)
-        return res.json()})
-      .then(data => {
-        // console.log("Data from bd:", data)
+      .then(res => res.json())
+      .then((data: Expense[]) => {
         setExpenses(data)
+        const customCategories = Array.from(new Set(data.map(e => e.category)))
+        setCategories(prev => Array.from(new Set([...prev, ...customCategories])))
       })
-      .catch(err => console.error("fetch err: ",err))
+      .catch(err => console.error("fetch err: ", err))
   }, [])
   
   const [filterCategory, setFilterCategory] = useState<Category | 'All'>('All')
@@ -550,6 +625,11 @@ export default function App() {
                     <p style={{ fontWeight: 500, fontSize: '0.9rem', color: '#1A1A1A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {expense.name}
                     </p>
+                    {expense.comment && (
+                      <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '2px' }}>
+                        💬 {expense.comment}
+                      </p>
+                    )}
                   </div>
                   <CategoryBadge category={expense.category} />
                   <p style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1A1A1A', minWidth: '72px', textAlign: 'right', flexShrink: 0 }}>
@@ -566,10 +646,11 @@ export default function App() {
                       setSelectedExpense(expense)
                       setShowModal(true)
                     }}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-black transition-opacity hover:opacity-90"
+                    // className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-black transition-opacity hover:opacity-90"
+                    className="w-7 h-7 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-gray-50 text-gray-300 hover:text-gray-700 flex-shrink-0"
                     style={{ fontSize: '0.75rem' }}
                     title="Change expense"
-                  >✏️</button>
+                  >✎</button>
                 </div>
               </div>
             )
@@ -580,6 +661,8 @@ export default function App() {
       {showModal && (
         <ExpenseModal
           expense={selectedExpense}
+          categories={categories}
+          onAddCategory={handleAddCategory}
           onClose={() => {
             setShowModal(false)
             setSelectedExpense(null)
@@ -596,3 +679,4 @@ export default function App() {
     </div>
   )
 }
+

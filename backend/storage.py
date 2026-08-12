@@ -17,15 +17,15 @@ def save_expenses_to_file(expenses: list[Expense], filename):
 def save_expense_to_database(expense: Expense, connection):
     cursor = connection.cursor()
 
-    print(f"INSERT OR IGNORE INTO expenses (id, name, price, category, date) VALUES {expense.id, expense.name, expense.price, expense.category, expense.date}")
-    cursor.execute("INSERT OR IGNORE INTO expenses (id, name, price, category, date) VALUES (?,?,?,?,?)", (expense.id, expense.name, expense.price, expense.category, expense.date))
+    print(f"INSERT OR IGNORE INTO expenses (id, name, price, category, date, comment) VALUES {expense.id, expense.name, expense.price, expense.category, expense.date, expense.comment}")
+    cursor.execute("INSERT OR IGNORE INTO expenses (id, name, price, category, date, comment) VALUES (?,?,?,?,?,?)", (expense.id, expense.name, expense.price, expense.category, expense.date, expense.comment))
 
     connection.commit()
 
 def update_expense_in_database(id: int, updated_expense, connection):
     cursor = connection.cursor()
 
-    cursor.execute("UPDATE expenses SET name=?, price=?, category=?, date=? WHERE id=?", (updated_expense.name, updated_expense.price, updated_expense.category, updated_expense.date, id))
+    cursor.execute("UPDATE expenses SET name=?, price=?, category=?, date=?, comment=? WHERE id=?", (updated_expense.name, updated_expense.price, updated_expense.category, updated_expense.date, updated_expense.comment, id))
 
     connection.commit()
     return cursor.rowcount
@@ -68,8 +68,10 @@ def read_expenses_from_database(connection: sqlite3):
     data_list = list()
     cursor = connection.cursor()
     data = cursor.execute("SELECT * FROM expenses").fetchall()
+    
     for row in data:
-        data_list.append(Expense(row[0], row[1], row[2], row[3], row[4]))
+        #print(f"Data read from database: {row[0]}, {row[1]}, {row[2]}, {row[3]}, {row[4]}")
+        data_list.append(Expense(row[0], row[1], row[2], row[3], row[4], row[5]))
     return data_list
         
 

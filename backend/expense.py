@@ -1,13 +1,14 @@
 class Expense:
-    def __init__(self, id, name, price, category, date):
+    def __init__(self, id, name, price, category, date, comment=""):
         self.id = id
         self.name = name
         self.price = price
         self.category = category
         self.date = date
+        self.comment = comment
 
     def __str__(self):
-        return f"Name: {self.name}(id: {self.id}), Price: {self.price}, Date: {self.date} ({self.category})"
+        return f"Name: {self.name}(id: {self.id}), Price: {self.price}, Date: {self.date} ({self.category}). Comment: {self.comment}"
 
     @property
     def id(self):
@@ -50,6 +51,13 @@ class Expense:
     def category(self, new_cat):
         self._category = new_cat
 
+    @property
+    def comment(self):
+        return self._comment
+    @comment.setter
+    def comment(self, new_comment):
+        self._comment = new_comment
+
     def to_dict(self):
         expense_data = {
             "id": self.id,
@@ -57,6 +65,7 @@ class Expense:
             "price": self.price,
             "category": self.category,
             "date": self.date,
+            "comment": self.comment,
         }
 
         return expense_data
@@ -68,18 +77,6 @@ class Expense:
         price = json_data["price"]
         category = json_data["category"]
         date = json_data["date"]
+        comment = json_data["comment"]
 
-        return cls(id, name, price, category, date)
-
-    def update_expense(self, part_to_change, new_information):
-
-        match part_to_change:
-            case 1:
-                self.name = new_information
-            case 2:
-                self.price = int(new_information)
-            case 3:
-                self.category = new_information
-            case 4:
-                self.date = new_information
-        
+        return cls(id, name, price, category, date, comment)

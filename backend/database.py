@@ -3,7 +3,11 @@ import sqlite3
 DATABASE = "backend/expenses.db"
 
 def get_connection():
-    conn = sqlite3.connect(DATABASE)
+    try:
+        conn = sqlite3.connect(DATABASE)
+    except FileNotFoundError: 
+        print("Database file was not found!")
+        return False
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -14,8 +18,10 @@ def initialize_database():
     name TEXT NOT NULL,
     price REAL NOT NULL,
     category TEXT NOT NULL,
-    date TEXT NOT NULL
+    date TEXT NOT NULL,
+    comment TEXT
     )
 """)
     conn.commit()
     conn.close()
+    print("Database initialized successfully.")

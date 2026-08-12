@@ -1,31 +1,22 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from .storage import read_expenses, save_expenses_to_file, get_next_id
-from .storage import save_expense_to_database, read_expenses_from_database, update_expense_in_database, remove_expense_from_database #related to db imports
 from .expense import Expense
 from .database import initialize_database, get_connection
-from pydantic import BaseModel
-import os
+from .storage import save_expense_to_database, read_expenses_from_database, update_expense_in_database, remove_expense_from_database, get_next_id #related to db imports
+from .schemas import ExpenseCreate
 
 app = FastAPI()
 initialize_database()
-DATA_FILE = "backend/data.json"
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allow_methods=["*"], allow_headers=["*"],)
 
 #get expenses
 @app.get("/expenses")
 def get_expenses():
-    #expenses = read_expenses(DATA_FILE) #related to .json file
     conn = get_connection()
     expenses = read_expenses_from_database(conn)
     conn.close()
+    
     return [expense.to_dict() for expense in expenses]
-
-class ExpenseCreate(BaseModel): #expense validator - used to check if the data types that come from frontend meet my class dt in models/expense.py. (to avoid price="abc")
-    name: str
-    price: float
-    category: str
-    date: str
 
 @app.post("/expenses")
 def add_expense(expense: ExpenseCreate):
@@ -45,6 +36,7 @@ def add_expense(expense: ExpenseCreate):
     conn.close()
 
     return new_expense.to_dict() #** - unpacking of the dictionary
+
 
 @app.put("/expenses/{id}")
 def update_expense(id: int, updated_expense: ExpenseCreate):
