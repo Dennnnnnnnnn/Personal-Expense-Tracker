@@ -7,7 +7,7 @@ from .schemas import ExpenseCreate
 
 app = FastAPI()
 initialize_database()
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allow_methods=["*"], allow_headers=["*"],)
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5500"], allow_methods=["*"], allow_headers=["*"],)
 
 #get expenses
 @app.get("/expenses")
